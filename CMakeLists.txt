@@ -8,7 +8,9 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 add_executable(CampusLostAndFound
     src/main.cpp
-    src/models/ItemReport.h
+    src/models/ItemReport.hpp
+    src/models/ReportManager.hpp
+    src/models/ReportManager.cpp
     src/ui/MainWindow.h
     src/ui/MainWindow.cpp
 )
