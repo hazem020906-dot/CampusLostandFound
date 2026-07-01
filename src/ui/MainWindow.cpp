@@ -27,6 +27,11 @@ MainWindow::MainWindow(QWidget *parent)
     dateInput->setPlaceholderText("Date");
 
     addButton = new QPushButton("Submit Lost Item");
+searchInput = new QLineEdit();
+searchInput->setPlaceholderText("Search reports");
+
+searchButton = new QPushButton("Search");
+showAllButton = new QPushButton("Show All");
 
     table = new QTableWidget();
     table->setColumnCount(5);
@@ -38,6 +43,10 @@ MainWindow::MainWindow(QWidget *parent)
     layout->addWidget(dateInput);
     layout->addWidget(addButton);
 
+layout->addWidget(new QLabel("Search Reports"));
+layout->addWidget(searchInput);
+layout->addWidget(searchButton);
+layout->addWidget(showAllButton);
     layout->addWidget(new QLabel("All Active Reports"));
     layout->addWidget(table);
 
@@ -65,6 +74,15 @@ MainWindow::MainWindow(QWidget *parent)
         categoryInput->clear();
         locationInput->clear();
         dateInput->clear();
+
+connect(searchButton, &QPushButton::clicked, this, [this]() {
+    refreshTable(manager.searchReports(searchInput->text()));
+});
+
+connect(showAllButton, &QPushButton::clicked, this, [this]() {
+    searchInput->clear();
+    refreshTable(manager.getAllReports());
+});
 
         refreshTable(manager.getAllReports());
 
