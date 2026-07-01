@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QMessageBox>
 #include <QLabel>
+#include <QTableWidgetItem>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -27,11 +28,18 @@ MainWindow::MainWindow(QWidget *parent)
 
     addButton = new QPushButton("Submit Lost Item");
 
+    table = new QTableWidget();
+    table->setColumnCount(5);
+    table->setHorizontalHeaderLabels({"Name", "Category", "Location", "Date", "Status"});
+
     layout->addWidget(nameInput);
     layout->addWidget(categoryInput);
     layout->addWidget(locationInput);
     layout->addWidget(dateInput);
     layout->addWidget(addButton);
+
+    layout->addWidget(new QLabel("All Active Reports"));
+    layout->addWidget(table);
 
     central->setLayout(layout);
     setCentralWidget(central);
@@ -58,11 +66,24 @@ MainWindow::MainWindow(QWidget *parent)
         locationInput->clear();
         dateInput->clear();
 
+        refreshTable(manager.getAllReports());
+
         QMessageBox::information(this, "Success", "Lost item submitted successfully.");
     });
+
+    refreshTable(manager.getAllReports());
 }
 
 void MainWindow::refreshTable(const QVector<ItemReport>& reports)
 {
-    Q_UNUSED(reports);
+    table->setRowCount(reports.size());
+
+    for (int i = 0; i < reports.size(); i++)
+    {
+        table->setItem(i, 0, new QTableWidgetItem(reports[i].itemName));
+        table->setItem(i, 1, new QTableWidgetItem(reports[i].category));
+        table->setItem(i, 2, new QTableWidgetItem(reports[i].location));
+        table->setItem(i, 3, new QTableWidgetItem(reports[i].date));
+        table->setItem(i, 4, new QTableWidgetItem(reports[i].status));
+    }
 }
