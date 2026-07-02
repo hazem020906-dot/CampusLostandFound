@@ -51,3 +51,46 @@ bool ReportManager::updateStatus(int index, const QString& newStatus)
     reports[index].status = newStatus;
     return true;
 }
+QVector<ItemReport> ReportManager::filterByCategory(const QString& category) const
+{
+    QVector<ItemReport> results;
+    for (const ItemReport& report : reports)
+    {
+        if (report.category.toLower() == category.toLower())
+            results.push_back(report);
+    }
+    return results;
+}
+
+QVector<ItemReport> ReportManager::filterByDate(const QString& date) const
+{
+    QVector<ItemReport> results;
+    for (const ItemReport& report : reports)
+    {
+        if (report.date == date)
+            results.push_back(report);
+    }
+    return results;
+}
+
+QVector<ItemReport> ReportManager::filterByLocation(const QString& location) const
+{
+    QVector<ItemReport> results;
+    for (const ItemReport& report : reports)
+    {
+        if (report.location.toLower().contains(location.toLower()))
+            results.push_back(report);
+    }
+    return results;
+}
+
+QVector<ItemReport> ReportManager::filterByStatus(const QString& status) const
+{
+    QVector<ItemReport> results;
+    for (const ItemReport& report : reports)
+    {
+        if (report.status.toLower() == status.toLower())
+            results.push_back(report);
+    }
+    return results;
+}
