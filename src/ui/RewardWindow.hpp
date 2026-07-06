@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <QLineEdit>
-#include <QDoubleSpinBox>
+#include <QTextEdit>
 #include <QPushButton>
 #include <QTableWidget>
 #include <QLabel>
@@ -21,11 +21,10 @@ private:
     RewardManager manager;
     User          currentUser;
 
-    QLineEdit*      itemNameInput;
-    QDoubleSpinBox* amountInput;
-    QLineEdit*      contactInput;
-    QLineEdit*      descriptionInput;
-    QPushButton*    addButton;
+    QLineEdit*   itemNameInput;
+    QTextEdit*   messageInput;
+    QLineEdit*   contactInput;
+    QPushButton* addButton;
 
     QLineEdit*   searchInput;
     QPushButton* searchButton;

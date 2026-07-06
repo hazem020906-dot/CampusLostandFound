@@ -4,9 +4,8 @@
 
 struct RewardOffer {
     QString itemName;
-    double  amount;
+    QString message;     
     QString contactInfo;
-    QString description;
     QString offeredBy;
     QString date;
 };

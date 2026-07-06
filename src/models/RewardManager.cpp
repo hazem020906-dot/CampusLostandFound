@@ -1,20 +1,18 @@
 #include "RewardManager.hpp"
 
 bool RewardManager::addReward(const QString& itemName,
-                               double amount,
+                               const QString& message,
                                const QString& contactInfo,
-                               const QString& description,
                                const QString& offeredBy,
                                const QString& date)
 {
-    if (itemName.isEmpty() || contactInfo.isEmpty() || amount <= 0)
+    if (itemName.isEmpty() || message.isEmpty())
         return false;
 
     RewardOffer reward;
     reward.itemName    = itemName;
-    reward.amount      = amount;
+    reward.message     = message;
     reward.contactInfo = contactInfo;
-    reward.description = description;
     reward.offeredBy   = offeredBy;
     reward.date        = date;
 
