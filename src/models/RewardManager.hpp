@@ -11,9 +11,8 @@ private:
 
 public:
     bool addReward(const QString& itemName,
-                    double amount,
+                    const QString& message,
                     const QString& contactInfo,
-                    const QString& description,
                     const QString& offeredBy,
                     const QString& date);
 

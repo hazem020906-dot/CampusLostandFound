@@ -10,40 +10,34 @@
 RewardWindow::RewardWindow(const User& user, QWidget* parent)
     : QMainWindow(parent), currentUser(user)
 {
-    setWindowTitle("Reward Offers - " + user.username);
+    setWindowTitle("Thank You Notes - " + user.username);
     resize(800, 600);
 
     QWidget*     central = new QWidget(this);
     QVBoxLayout* layout  = new QVBoxLayout();
 
-    layout->addWidget(new QLabel("Offer a Reward for a Lost Item"));
+    layout->addWidget(new QLabel("Leave a Thank You Note for a Returned Item"));
     layout->addSpacing(8);
 
     itemNameInput = new QLineEdit();
     itemNameInput->setPlaceholderText("Item name");
 
-    amountInput = new QDoubleSpinBox();
-    amountInput->setRange(1, 100000);
-    amountInput->setPrefix("EGP ");
-    amountInput->setValue(100);
+    messageInput = new QTextEdit();
+    messageInput->setPlaceholderText("Write your thank-you message here...");
+    messageInput->setFixedHeight(80);
 
     contactInput = new QLineEdit();
-    contactInput->setPlaceholderText("Contact info (phone or email)");
+    contactInput->setPlaceholderText("Contact info (optional)");
 
-    descriptionInput = new QLineEdit();
-    descriptionInput->setPlaceholderText("Description (optional)");
-
-    addButton = new QPushButton("Offer Reward");
+    addButton = new QPushButton("Send Thank You");
 
     layout->addWidget(itemNameInput);
-    layout->addWidget(new QLabel("Reward amount:"));
-    layout->addWidget(amountInput);
+    layout->addWidget(messageInput);
     layout->addWidget(contactInput);
-    layout->addWidget(descriptionInput);
     layout->addWidget(addButton);
     layout->addSpacing(10);
 
-    layout->addWidget(new QLabel("Search Reward Offers"));
+    layout->addWidget(new QLabel("Search Thank You Notes"));
 
     QHBoxLayout* searchRow = new QHBoxLayout();
     searchInput = new QLineEdit();
@@ -57,16 +51,16 @@ RewardWindow::RewardWindow(const User& user, QWidget* parent)
     layout->addLayout(searchRow);
     layout->addSpacing(6);
 
-    layout->addWidget(new QLabel("All Reward Offers"));
+    layout->addWidget(new QLabel("All Thank You Notes"));
 
     table = new QTableWidget();
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
     table->setSelectionMode(QAbstractItemView::SingleSelection);
-    table->setColumnCount(6);
-    table->setHorizontalHeaderLabels({"Item", "Amount", "Contact", "Description", "Offered By", "Date"});
+    table->setColumnCount(5);
+    table->setHorizontalHeaderLabels({"Item", "Message", "Contact", "From", "Date"});
     layout->addWidget(table);
 
-    removeButton = new QPushButton("Remove Selected Offer");
+    removeButton = new QPushButton("Remove Selected Note");
     layout->addWidget(removeButton);
 
     central->setLayout(layout);
@@ -76,34 +70,32 @@ RewardWindow::RewardWindow(const User& user, QWidget* parent)
 
     connect(addButton, &QPushButton::clicked, this, [this]()
     {
-        if (itemNameInput->text().isEmpty() || contactInput->text().isEmpty())
+        if (itemNameInput->text().isEmpty() || messageInput->toPlainText().isEmpty())
         {
-            QMessageBox::warning(this, "Error", "Please fill in the item name and contact info.");
+            QMessageBox::warning(this, "Error", "Please fill in the item name and message.");
             return;
         }
 
         bool success = manager.addReward(
             itemNameInput->text(),
-            amountInput->value(),
+            messageInput->toPlainText(),
             contactInput->text(),
-            descriptionInput->text(),
             currentUser.username,
             QDate::currentDate().toString("yyyy-MM-dd")
         );
 
         if (!success)
         {
-            QMessageBox::warning(this, "Error", "Could not add reward offer.");
+            QMessageBox::warning(this, "Error", "Could not add thank you note.");
             return;
         }
 
         itemNameInput->clear();
+        messageInput->clear();
         contactInput->clear();
-        descriptionInput->clear();
-        amountInput->setValue(100);
 
         refreshTable(manager.getAllRewards());
-        QMessageBox::information(this, "Success", "Reward offer added successfully.");
+        QMessageBox::information(this, "Success", "Thank you note sent successfully.");
     });
 
     connect(searchButton, &QPushButton::clicked, this, [this]()
@@ -123,7 +115,7 @@ RewardWindow::RewardWindow(const User& user, QWidget* parent)
 
         if (row < 0)
         {
-            QMessageBox::warning(this, "No selection", "Please select a reward offer to remove.");
+            QMessageBox::warning(this, "No selection", "Please select a note to remove.");
             return;
         }
 
@@ -133,7 +125,7 @@ RewardWindow::RewardWindow(const User& user, QWidget* parent)
         }
         else
         {
-            QMessageBox::warning(this, "Error", "Could not remove reward offer.");
+            QMessageBox::warning(this, "Error", "Could not remove note.");
         }
     });
 }
@@ -144,10 +136,9 @@ void RewardWindow::refreshTable(const QVector<RewardOffer>& rewards)
     for (int i = 0; i < rewards.size(); i++)
     {
         table->setItem(i, 0, new QTableWidgetItem(rewards[i].itemName));
-        table->setItem(i, 1, new QTableWidgetItem(QString::number(rewards[i].amount, 'f', 2)));
+        table->setItem(i, 1, new QTableWidgetItem(rewards[i].message));
         table->setItem(i, 2, new QTableWidgetItem(rewards[i].contactInfo));
-        table->setItem(i, 3, new QTableWidgetItem(rewards[i].description));
-        table->setItem(i, 4, new QTableWidgetItem(rewards[i].offeredBy));
-        table->setItem(i, 5, new QTableWidgetItem(rewards[i].date));
+        table->setItem(i, 3, new QTableWidgetItem(rewards[i].offeredBy));
+        table->setItem(i, 4, new QTableWidgetItem(rewards[i].date));
     }
 }
