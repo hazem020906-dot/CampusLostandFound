@@ -26,6 +26,10 @@ private:
     QLineEdit*   dateInput;
     QComboBox*   reportTypeBox; // Lost or Found
     QPushButton* submitButton;
+    QPushButton* feedbackButton;
+    QPushButton* messagesButton;
+    QPushButton* statsButton;
+    QPushButton* rewardsButton;
 
     // Filter controls
     QComboBox*   filterTypeBox;    // dropdown to pick which filter to apply: Category, Date etc

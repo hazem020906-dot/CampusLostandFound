@@ -1,4 +1,8 @@
 #include "StudentDashboard.hpp"
+#include "FeedbackWindow.hpp"
+#include "MessagingWindow.hpp"
+#include "StatisticsWindow.hpp"
+#include "RewardWindow.hpp"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QWidget>
@@ -16,8 +20,33 @@ StudentDashboard::StudentDashboard(const User& user, QWidget* parent)
     QWidget*     central = new QWidget(this);
     QVBoxLayout* layout  = new QVBoxLayout();
 
-    // ── Header
+    //  Header
     layout->addWidget(new QLabel("Welcome, " + user.username + "  Student Dashboard"));
+    //  Feature navigation
+    feedbackButton = new QPushButton("Feedback");
+    messagesButton = new QPushButton("Messages");
+    statsButton    = new QPushButton("Statistics");
+    rewardsButton  = new QPushButton("Rewards");
+
+    QHBoxLayout* navRow = new QHBoxLayout();
+    navRow->addWidget(feedbackButton);
+    navRow->addWidget(messagesButton);
+    navRow->addWidget(statsButton);
+    navRow->addWidget(rewardsButton);
+    layout->addLayout(navRow);
+
+    connect(feedbackButton, &QPushButton::clicked, this, [this]() {
+        (new FeedbackWindow(currentUser))->show();
+    });
+    connect(messagesButton, &QPushButton::clicked, this, [this]() {
+        (new MessagingWindow(currentUser))->show();
+    });
+    connect(statsButton, &QPushButton::clicked, this, [this]() {
+        (new StatisticsWindow())->show();
+    });
+    connect(rewardsButton, &QPushButton::clicked, this, [this]() {
+        (new RewardWindow(currentUser))->show();
+    });
     layout->addSpacing(8);
 
     // ── Report submission form layout code
