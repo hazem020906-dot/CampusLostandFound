@@ -28,6 +28,10 @@ add_executable(CampusLostAndFound
     src/models/RewardManager.hpp
     src/models/RewardManager.cpp
 
+    # Models - Matching engine (Jana)
+    src/models/MatchingEngine.hpp
+    src/models/MatchingEngine.cpp
+
     # UI
     src/ui/LoginWindow.hpp
     src/ui/LoginWindow.cpp
@@ -48,3 +52,11 @@ add_executable(CampusLostAndFound
 )
 
 target_link_libraries(CampusLostAndFound PRIVATE Qt6::Widgets)
+
+# Unit tests (GoogleTest) - off by default so a normal app build doesn't
+# need to download/build gtest. Turn on with: cmake .. -DBUILD_TESTS=ON
+option(BUILD_TESTS "Build the GoogleTest unit test suite" OFF)
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
