@@ -4,10 +4,21 @@ project(CampusLostAndFound)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Core)
+find_package(Boost REQUIRED COMPONENTS system)
+find_package(nlohmann_json REQUIRED)
+find_package(Threads REQUIRED)
+
+
+
 
 add_executable(CampusLostAndFound
     src/main.cpp
+    # Client networking
+    src/client/NetworkClient.hpp
+    src/client/NetworkClient.cpp
+
+
 
     # Models
     src/models/ItemReport.hpp
@@ -46,5 +57,34 @@ add_executable(CampusLostAndFound
     src/ui/RewardWindow.hpp
     src/ui/RewardWindow.cpp
 )
+add_executable(LostFoundServer
+    src/server/main.cpp
+    src/server/Server.hpp
+    src/server/Server.cpp
 
-target_link_libraries(CampusLostAndFound PRIVATE Qt6::Widgets)
+    src/models/ItemReport.hpp
+    src/models/ReportManager.hpp
+    src/models/ReportManager.cpp
+
+    src/models/User.hpp
+    src/models/UserManager.hpp
+    src/models/UserManager.cpp
+)
+
+
+
+
+
+
+target_link_libraries(CampusLostAndFound PRIVATE
+    Qt6::Widgets
+    Boost::system
+    nlohmann_json::nlohmann_json
+    Threads::Threads
+)
+target_link_libraries(LostFoundServer PRIVATE
+    Qt6::Core
+    Boost::system
+    nlohmann_json::nlohmann_json
+    Threads::Threads
+)

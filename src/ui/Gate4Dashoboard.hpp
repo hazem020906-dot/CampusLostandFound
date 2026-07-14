@@ -6,7 +6,9 @@
 #include <QPushButton>
 #include <QComboBox>
 #include <QLabel>
-#include "../models/ReportManager.hpp"
+
+#include "../client/NetworkClient.hpp"
+#include "../models/ItemReport.hpp"
 #include "../models/User.hpp"
 
 class Gate4Dashboard : public QMainWindow
@@ -14,10 +16,16 @@ class Gate4Dashboard : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit Gate4Dashboard(const User& user, QWidget* parent = nullptr);
+    explicit Gate4Dashboard(
+    const User& user,
+    NetworkClient* networkClient,
+    QWidget* parent = nullptr
+);
 
 private:
-    ReportManager manager;
+    
+NetworkClient* networkClient;
+QVector<ItemReport> currentReports;
     User          currentUser;
 
     QTableWidget* table;

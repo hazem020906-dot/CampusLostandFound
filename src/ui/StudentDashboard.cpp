@@ -3,6 +3,7 @@
 #include "MessagingWindow.hpp"
 #include "StatisticsWindow.hpp"
 #include "RewardWindow.hpp"
+
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QWidget>
@@ -11,22 +12,35 @@
 #include <QTableWidgetItem>
 #include <QAbstractItemView>
 
-StudentDashboard::StudentDashboard(const User& user, QWidget* parent)
-    : QMainWindow(parent), currentUser(user)//constructor
+#include <nlohmann/json.hpp>
+
+StudentDashboard::StudentDashboard(
+    const User& user,
+    NetworkClient* client,
+    QWidget* parent
+)
+    : QMainWindow(parent),
+      networkClient(client),
+      currentUser(user)
 {
     setWindowTitle("Student Dashboard - " + user.username);
     resize(800, 600);
 
-    QWidget*     central = new QWidget(this);
-    QVBoxLayout* layout  = new QVBoxLayout();
+    QWidget* central = new QWidget(this);
+    QVBoxLayout* layout = new QVBoxLayout();
 
-    //  Header
-    layout->addWidget(new QLabel("Welcome, " + user.username + "  Student Dashboard"));
-    //  Feature navigation
+    // Header
+    layout->addWidget(
+        new QLabel(
+            "Welcome, " + user.username + "  Student Dashboard"
+        )
+    );
+
+    // Feature navigation
     feedbackButton = new QPushButton("Feedback");
     messagesButton = new QPushButton("Messages");
-    statsButton    = new QPushButton("Statistics");
-    rewardsButton  = new QPushButton("Rewards");
+    statsButton = new QPushButton("Statistics");
+    rewardsButton = new QPushButton("Rewards");
 
     QHBoxLayout* navRow = new QHBoxLayout();
     navRow->addWidget(feedbackButton);
@@ -35,22 +49,68 @@ StudentDashboard::StudentDashboard(const User& user, QWidget* parent)
     navRow->addWidget(rewardsButton);
     layout->addLayout(navRow);
 
-    connect(feedbackButton, &QPushButton::clicked, this, [this]() {
-        (new FeedbackWindow(currentUser))->show();
-    });
-    connect(messagesButton, &QPushButton::clicked, this, [this]() {
-        (new MessagingWindow(currentUser))->show();
-    });
-    connect(statsButton, &QPushButton::clicked, this, [this]() {
-        (new StatisticsWindow())->show();
-    });
-    connect(rewardsButton, &QPushButton::clicked, this, [this]() {
-        (new RewardWindow(currentUser))->show();
-    });
+    connect(
+        feedbackButton,
+        &QPushButton::clicked,
+        this,
+        [this]()
+        {
+            FeedbackWindow* window =
+                new FeedbackWindow(currentUser, this);
+
+            window->setAttribute(Qt::WA_DeleteOnClose);
+            window->show();
+        }
+    );
+
+    connect(
+        messagesButton,
+        &QPushButton::clicked,
+        this,
+        [this]()
+        {
+            MessagingWindow* window =
+                new MessagingWindow(currentUser, this);
+
+            window->setAttribute(Qt::WA_DeleteOnClose);
+            window->show();
+        }
+    );
+
+    connect(
+        statsButton,
+        &QPushButton::clicked,
+        this,
+        [this]()
+        {
+            StatisticsWindow* window =
+                new StatisticsWindow(this);
+
+            window->setAttribute(Qt::WA_DeleteOnClose);
+            window->show();
+        }
+    );
+
+    connect(
+        rewardsButton,
+        &QPushButton::clicked,
+        this,
+        [this]()
+        {
+            RewardWindow* window =
+                new RewardWindow(currentUser, this);
+
+            window->setAttribute(Qt::WA_DeleteOnClose);
+            window->show();
+        }
+    );
+
     layout->addSpacing(8);
 
-    // ── Report submission form layout code
-    layout->addWidget(new QLabel("Submit a Lost or Found Item Report"));
+    // Report submission form
+    layout->addWidget(
+        new QLabel("Submit a Lost or Found Item Report")
+    );
 
     nameInput = new QLineEdit();
     nameInput->setPlaceholderText("Item name");
@@ -59,7 +119,7 @@ StudentDashboard::StudentDashboard(const User& user, QWidget* parent)
     categoryInput->setPlaceholderText("Category");
 
     locationInput = new QLineEdit();
-    locationInput->setPlaceholderText("Location where you found the item");
+    locationInput->setPlaceholderText("Location");
 
     dateInput = new QLineEdit();
     dateInput->setPlaceholderText("Date");
@@ -73,25 +133,34 @@ StudentDashboard::StudentDashboard(const User& user, QWidget* parent)
     layout->addWidget(categoryInput);
     layout->addWidget(locationInput);
     layout->addWidget(dateInput);
-    layout->addWidget(new QLabel("Report type:"));//header thing for reporttypebox
+    layout->addWidget(new QLabel("Report type:"));
     layout->addWidget(reportTypeBox);
     layout->addWidget(submitButton);
     layout->addSpacing(10);
 
-    // ── Filter controls
+    // Filter controls
     layout->addWidget(new QLabel("Filter Reports"));
 
     QHBoxLayout* filterRow = new QHBoxLayout();
 
     filterTypeBox = new QComboBox();
-    filterTypeBox->addItems({"Category", "Date", "Location", "Status"});
+    filterTypeBox->addItems({
+        "Category",
+        "Date",
+        "Location",
+        "Status"
+    });
 
     filterValueInput = new QLineEdit();
-    filterValueInput->setPlaceholderText("Filter value");//user types here filtering by value
+    filterValueInput->setPlaceholderText("Filter value");
 
-    // Status box only shown when filtering by status
     filterStatusBox = new QComboBox();
-    filterStatusBox->addItems({"Lost", "Found", "Claimed", "Returned"});
+    filterStatusBox->addItems({
+        "Lost",
+        "Found",
+        "Claimed",
+        "Returned"
+    });
 
     applyFilterButton = new QPushButton("Apply Filter");
     clearFilterButton = new QPushButton("Clear Filter");
@@ -103,114 +172,331 @@ StudentDashboard::StudentDashboard(const User& user, QWidget* parent)
     filterRow->addWidget(filterStatusBox);
     filterRow->addWidget(applyFilterButton);
     filterRow->addWidget(clearFilterButton);
+
     layout->addLayout(filterRow);
     layout->addSpacing(6);
 
-    // ── Table to show all repports on the app the UI
+    // Reports table
     layout->addWidget(new QLabel("All Reports"));
 
     table = new QTableWidget();
-    table->setSelectionBehavior(QAbstractItemView::SelectRows);
-    table->setSelectionMode(QAbstractItemView::SingleSelection);
+    table->setSelectionBehavior(
+        QAbstractItemView::SelectRows
+    );
+    table->setSelectionMode(
+        QAbstractItemView::SingleSelection
+    );
     table->setColumnCount(5);
-    table->setHorizontalHeaderLabels({"Name", "Category", "Location", "Date", "Status"});
+    table->setHorizontalHeaderLabels({
+        "Name",
+        "Category",
+        "Location",
+        "Date",
+        "Status"
+    });
+
     layout->addWidget(table);
 
     central->setLayout(layout);
     setCentralWidget(central);
 
-    refreshTable(manager.getAllReports());
-
-    // ── Connections signakls and slots
-
-    connect(submitButton, &QPushButton::clicked, this, [this]()
-    {
-        if (nameInput->text().isEmpty()     ||
-            categoryInput->text().isEmpty() ||
-            locationInput->text().isEmpty() ||
-            dateInput->text().isEmpty())
+    // Submit report through the server
+    connect(
+        submitButton,
+        &QPushButton::clicked,
+        this,
+        [this]()
         {
-            QMessageBox::warning(this, "Error", "Please fill in all fields.");
-            return;
-        }
-
-        // addLostItem works for both lost and found
-        manager.addLostItem(
-            nameInput->text(),
-            categoryInput->text(),
-            locationInput->text(),
-            dateInput->text()
-        );
-
-        QVector<ItemReport> all = manager.getAllReports();
-        if (!all.isEmpty())
-        {
-            // Update the last added report's status to match the selected type
-            manager.updateStatus(all.size() - 1, reportTypeBox->currentText());
-        }
-
-        nameInput->clear();
-        categoryInput->clear();
-        locationInput->clear();
-        dateInput->clear();
-
-        refreshTable(manager.getAllReports());
-        QMessageBox::information(this, "Success", "Report submitted successfully.");
-    });
-
-    connect(applyFilterButton, &QPushButton::clicked, this, [this]()
-    {
-        QString filterType = filterTypeBox->currentText();
-
-        if (filterType == "Category")
-        {
-            if (filterValueInput->text().isEmpty())
+            if (
+                nameInput->text().isEmpty() ||
+                categoryInput->text().isEmpty() ||
+                locationInput->text().isEmpty() ||
+                dateInput->text().isEmpty()
+            )
             {
-                QMessageBox::warning(this, "Error", "Enter a category to filter by.");
+                QMessageBox::warning(
+                    this,
+                    "Error",
+                    "Please fill in all fields."
+                );
                 return;
             }
-            refreshTable(manager.filterByCategory(filterValueInput->text()));
-        }
-        else if (filterType == "Date")
-        {
-            if (filterValueInput->text().isEmpty())
-            {
-                QMessageBox::warning(this, "Error", "Enter a date to filter by.");
-                return;
-            }
-            refreshTable(manager.filterByDate(filterValueInput->text()));
-        }
-        else if (filterType == "Location")
-        {
-            if (filterValueInput->text().isEmpty())
-            {
-                QMessageBox::warning(this, "Error", "Enter a location to filter by.");
-                return;
-            }
-            refreshTable(manager.filterByLocation(filterValueInput->text()));
-        }
-        else if (filterType == "Status")
-        {
-            refreshTable(manager.filterByStatus(filterStatusBox->currentText()));
-        }
-    });
 
-    connect(clearFilterButton, &QPushButton::clicked, this, [this]()
-    {
-        filterValueInput->clear();
-        refreshTable(manager.getAllReports());
-    });
+            networkClient->submitReport(
+                nameInput->text(),
+                categoryInput->text(),
+                locationInput->text(),
+                dateInput->text(),
+                reportTypeBox->currentText()
+            );
+
+            nameInput->clear();
+            categoryInput->clear();
+            locationInput->clear();
+            dateInput->clear();
+        }
+    );
+
+    // Receive report snapshots from the server
+    connect(
+        networkClient,
+        &NetworkClient::reportsSnapshot,
+        this,
+        [this](const QString& reportsJson)
+        {
+            try
+            {
+                nlohmann::json reports =
+                    nlohmann::json::parse(
+                        reportsJson.toStdString()
+                    );
+
+                QVector<ItemReport> receivedReports;
+
+                for (const auto& reportJson : reports)
+                {
+                    ItemReport report;
+
+                    report.itemName =
+                        QString::fromStdString(
+                            reportJson.value(
+                                "itemName",
+                                ""
+                            )
+                        );
+
+                    report.category =
+                        QString::fromStdString(
+                            reportJson.value(
+                                "category",
+                                ""
+                            )
+                        );
+
+                    report.location =
+                        QString::fromStdString(
+                            reportJson.value(
+                                "location",
+                                ""
+                            )
+                        );
+
+                    report.date =
+                        QString::fromStdString(
+                            reportJson.value(
+                                "date",
+                                ""
+                            )
+                        );
+
+                    report.status =
+                        QString::fromStdString(
+                            reportJson.value(
+                                "status",
+                                ""
+                            )
+                        );
+
+                    receivedReports.push_back(report);
+                }
+
+                currentReports = receivedReports;
+                refreshTable(currentReports);
+            }
+            catch (const nlohmann::json::exception&)
+            {
+                QMessageBox::warning(
+                    this,
+                    "Error",
+                    "The report data received from the server was invalid."
+                );
+            }
+        }
+    );
+
+    // Matching notification
+    connect(
+        networkClient,
+        &NetworkClient::notificationReceived,
+        this,
+        [this](const QString& message)
+        {
+            QMessageBox::information(
+                this,
+                "Potential Match",
+                message
+            );
+        }
+    );
+
+    // Server error
+    connect(
+        networkClient,
+        &NetworkClient::serverError,
+        this,
+        [this](const QString& message)
+        {
+            QMessageBox::warning(
+                this,
+                "Server Error",
+                message
+            );
+        }
+    );
+
+    // Disconnection feedback
+    connect(
+        networkClient,
+        &NetworkClient::disconnected,
+        this,
+        [this]()
+        {
+            QMessageBox::warning(
+                this,
+                "Connection Lost",
+                "The connection to the server was lost."
+            );
+
+            submitButton->setEnabled(false);
+        }
+    );
+
+    // Apply local filter to the latest server snapshot
+    connect(
+        applyFilterButton,
+        &QPushButton::clicked,
+        this,
+        [this]()
+        {
+            QString filterType =
+                filterTypeBox->currentText();
+
+            QString filterValue =
+                filterValueInput->text();
+
+            QVector<ItemReport> filteredReports;
+
+            if (
+                filterType != "Status" &&
+                filterValue.isEmpty()
+            )
+            {
+                QMessageBox::warning(
+                    this,
+                    "Error",
+                    "Enter a value to filter by."
+                );
+                return;
+            }
+
+            for (const ItemReport& report : currentReports)
+            {
+                bool matches = false;
+
+                if (filterType == "Category")
+                {
+                    matches =
+                        report.category.contains(
+                            filterValue,
+                            Qt::CaseInsensitive
+                        );
+                }
+                else if (filterType == "Date")
+                {
+                    matches =
+                        report.date.contains(
+                            filterValue,
+                            Qt::CaseInsensitive
+                        );
+                }
+                else if (filterType == "Location")
+                {
+                    matches =
+                        report.location.contains(
+                            filterValue,
+                            Qt::CaseInsensitive
+                        );
+                }
+                else if (filterType == "Status")
+                {
+                    matches =
+                        report.status.compare(
+                            filterStatusBox->currentText(),
+                            Qt::CaseInsensitive
+                        ) == 0;
+                }
+
+                if (matches)
+                {
+                    filteredReports.push_back(report);
+                }
+            }
+
+            refreshTable(filteredReports);
+        }
+    );
+
+    connect(
+        clearFilterButton,
+        &QPushButton::clicked,
+        this,
+        [this]()
+        {
+            filterValueInput->clear();
+            refreshTable(currentReports);
+        }
+    );
+
+    // Ask the server for the current report list
+    networkClient->requestAllReports();
 }
 
-void StudentDashboard::refreshTable(const QVector<ItemReport>& reports)
+void StudentDashboard::refreshTable(
+    const QVector<ItemReport>& reports
+)
 {
     table->setRowCount(reports.size());
+
     for (int i = 0; i < reports.size(); i++)
     {
-        table->setItem(i, 0, new QTableWidgetItem(reports[i].itemName));
-        table->setItem(i, 1, new QTableWidgetItem(reports[i].category));
-        table->setItem(i, 2, new QTableWidgetItem(reports[i].location));
-        table->setItem(i, 3, new QTableWidgetItem(reports[i].date));
-        table->setItem(i, 4, new QTableWidgetItem(reports[i].status));
+        table->setItem(
+            i,
+            0,
+            new QTableWidgetItem(
+                reports[i].itemName
+            )
+        );
+
+        table->setItem(
+            i,
+            1,
+            new QTableWidgetItem(
+                reports[i].category
+            )
+        );
+
+        table->setItem(
+            i,
+            2,
+            new QTableWidgetItem(
+                reports[i].location
+            )
+        );
+
+        table->setItem(
+            i,
+            3,
+            new QTableWidgetItem(
+                reports[i].date
+            )
+        );
+
+        table->setItem(
+            i,
+            4,
+            new QTableWidgetItem(
+                reports[i].status
+            )
+        );
     }
 }

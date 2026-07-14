@@ -6,26 +6,31 @@
 #include <QPushButton>
 #include <QComboBox>
 #include <QLabel>
-#include "../models/UserManager.hpp"
+
+#include "../models/User.hpp"
+#include "../client/NetworkClient.hpp"
 
 class LoginWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-  explicit  LoginWindow(QWidget* parent = nullptr);//constructor building the login screen parent is null to be able to create standalone widget as window
+    explicit LoginWindow(
+        NetworkClient* networkClient,
+        QWidget* parent = nullptr
+    );
 
 private:
-    UserManager userManager;
+    NetworkClient* networkClient;
 
-    QLineEdit*  usernameInput;
-    QLineEdit*  passwordInput;
-    QComboBox*  roleBox;        // used only during registration
+    QLineEdit* usernameInput;
+    QLineEdit* passwordInput;
+    QComboBox* roleBox;
     QPushButton* loginButton;
     QPushButton* registerButton;
-    QLabel*     feedbackLabel;  // shows success or error messages to the user like username taken or password is wrong etc
+    QLabel* feedbackLabel;
 
-    void openDashboard(const User& user);// declaration to open the correct dashboard for students/security respectively
+    void openDashboard(const User& user);
 };
 
 #endif
