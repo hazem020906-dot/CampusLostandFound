@@ -1,19 +1,22 @@
 #include "LoginWindow.hpp"
 #include "StudentDashboard.hpp"
 #include "Gate4Dashoboard.hpp"
-#include <QVBoxLayout>
-#include <QFormLayout>
-#include <QWidget>
-#include <QMessageBox>
 
-LoginWindow::LoginWindow(QWidget* parent)
-    : QMainWindow(parent)
+#include <QVBoxLayout>
+#include <QWidget>
+
+LoginWindow::LoginWindow(
+    NetworkClient* client,
+    QWidget* parent
+)
+    : QMainWindow(parent),
+      networkClient(client)
 {
     setWindowTitle("AUC Lost & Found - Login");
     resize(400, 300);
 
-    QWidget*     central = new QWidget(this);
-    QVBoxLayout* layout  = new QVBoxLayout();
+    QWidget* central = new QWidget(this);
+    QVBoxLayout* layout = new QVBoxLayout();
 
     layout->addWidget(new QLabel("AUC Campus Lost & Found"));
     layout->addSpacing(10);
@@ -28,18 +31,23 @@ LoginWindow::LoginWindow(QWidget* parent)
     roleBox = new QComboBox();
     roleBox->addItems({"Student", "Security"});
 
-    loginButton    = new QPushButton("Login");
+    loginButton = new QPushButton("Login");
     registerButton = new QPushButton("Register New Account");
 
-    feedbackLabel = new QLabel("");
+    feedbackLabel = new QLabel("Connecting to server...");
     feedbackLabel->setWordWrap(true);
 
     layout->addWidget(new QLabel("Username:"));
     layout->addWidget(usernameInput);
+
     layout->addWidget(new QLabel("Password:"));
     layout->addWidget(passwordInput);
-    layout->addWidget(new QLabel("Role (for registration only):"));
+
+    layout->addWidget(
+        new QLabel("Role (for registration only):")
+    );
     layout->addWidget(roleBox);
+
     layout->addWidget(loginButton);
     layout->addWidget(registerButton);
     layout->addWidget(feedbackLabel);
@@ -47,70 +55,167 @@ LoginWindow::LoginWindow(QWidget* parent)
     central->setLayout(layout);
     setCentralWidget(central);
 
-    // Login
-    connect(loginButton, &QPushButton::clicked, this, [this]()
-    {
-        if (usernameInput->text().isEmpty() || passwordInput->text().isEmpty())
+    loginButton->setEnabled(false);
+    registerButton->setEnabled(false);
+
+    connect(
+        networkClient,
+        &NetworkClient::connected,
+        this,
+        [this]()
         {
-            feedbackLabel->setText("Please enter both username and password.");
-            return;
+            feedbackLabel->setText("Connected to server.");
+            loginButton->setEnabled(true);
+            registerButton->setEnabled(true);
         }
+    );
 
-        User loggedInUser;
-        bool success = userManager.login(
-            usernameInput->text(),
-            passwordInput->text(),
-            loggedInUser
-        );
-
-        if (!success)
+    connect(
+        networkClient,
+        &NetworkClient::disconnected,
+        this,
+        [this]()
         {
-            feedbackLabel->setText("Invalid username or password. Please try again.");
-            return;
+            feedbackLabel->setText("Disconnected from server.");
+            loginButton->setEnabled(false);
+            registerButton->setEnabled(false);
         }
+    );
 
-        openDashboard(loggedInUser);
-    });
-
-    // Register
-    connect(registerButton, &QPushButton::clicked, this, [this]()
-    {
-        if (usernameInput->text().isEmpty() || passwordInput->text().isEmpty())
+    connect(
+        networkClient,
+        &NetworkClient::connectionError,
+        this,
+        [this](const QString& message)
         {
-            feedbackLabel->setText("Please fill in username and password to register.");
-            return;
+            feedbackLabel->setText(message);
+            loginButton->setEnabled(false);
+            registerButton->setEnabled(false);
         }
+    );
 
-        bool success = userManager.registerUser(
-            usernameInput->text(),
-            passwordInput->text(),
-            roleBox->currentText()
-        );
-
-        if (!success)
+    connect(
+        networkClient,
+        &NetworkClient::serverError,
+        this,
+        [this](const QString& message)
         {
-            feedbackLabel->setText("Username already taken. Please choose a different one.");
-            return;
+            feedbackLabel->setText(message);
         }
+    );
 
-        feedbackLabel->setText("Account created successfully. You can now log in.");
-        usernameInput->clear();
-        passwordInput->clear();
-    });
+    connect(
+        loginButton,
+        &QPushButton::clicked,
+        this,
+        [this]()
+        {
+            if (
+                usernameInput->text().isEmpty() ||
+                passwordInput->text().isEmpty()
+            )
+            {
+                feedbackLabel->setText(
+                    "Please enter both username and password."
+                );
+                return;
+            }
+
+            feedbackLabel->setText("Logging in...");
+
+            this->networkClient->login(
+                usernameInput->text(),
+                passwordInput->text()
+            );
+        }
+    );
+
+    connect(
+        networkClient,
+        &NetworkClient::loginResult,
+        this,
+        [this](
+            bool success,
+            const QString& username,
+            const QString& role
+        )
+        {
+            if (!success)
+            {
+                feedbackLabel->setText(
+                    "Invalid username or password."
+                );
+                return;
+            }
+
+            User loggedInUser;
+            loggedInUser.username = username;
+            loggedInUser.role = role;
+
+            feedbackLabel->setText("Login successful.");
+            openDashboard(loggedInUser);
+        }
+    );
+
+    connect(
+        registerButton,
+        &QPushButton::clicked,
+        this,
+        [this]()
+        {
+            if (
+                usernameInput->text().isEmpty() ||
+                passwordInput->text().isEmpty()
+            )
+            {
+                feedbackLabel->setText(
+                    "Please fill in username and password."
+                );
+                return;
+            }
+
+            feedbackLabel->setText("Creating account...");
+
+            this->networkClient->registerUser(
+                usernameInput->text(),
+                passwordInput->text(),
+                roleBox->currentText()
+            );
+        }
+    );
+
+    connect(
+        networkClient,
+        &NetworkClient::registerResult,
+        this,
+        [this](bool success, const QString& message)
+        {
+            feedbackLabel->setText(message);
+
+            if (success)
+            {
+                usernameInput->clear();
+                passwordInput->clear();
+            }
+        }
+    );
 }
 
 void LoginWindow::openDashboard(const User& user)
 {
     if (user.role == "Security")
     {
-        Gate4Dashboard* dashboard = new Gate4Dashboard(user);
+        Gate4Dashboard* dashboard =
+            new Gate4Dashboard(user, networkClient);
         dashboard->show();
     }
     else
     {
-        StudentDashboard* dashboard = new StudentDashboard(user);
+        StudentDashboard* dashboard =
+            new StudentDashboard(user, networkClient);
+
         dashboard->show();
     }
 
-    this->hide(); // hide the login window, not close, in case they log out later
+    hide();
 }
