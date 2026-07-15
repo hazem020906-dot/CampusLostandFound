@@ -39,6 +39,10 @@ add_executable(CampusLostAndFound
     src/models/RewardManager.hpp
     src/models/RewardManager.cpp
 
+    # Models - Matching engine (Jana)
+    src/models/MatchingEngine.hpp
+    src/models/MatchingEngine.cpp
+
     # UI
     src/ui/LoginWindow.hpp
     src/ui/LoginWindow.cpp
@@ -69,12 +73,10 @@ add_executable(LostFoundServer
     src/models/User.hpp
     src/models/UserManager.hpp
     src/models/UserManager.cpp
+
+    src/models/MatchingEngine.hpp
+    src/models/MatchingEngine.cpp
 )
-
-
-
-
-
 
 target_link_libraries(CampusLostAndFound PRIVATE
     Qt6::Widgets
@@ -82,9 +84,18 @@ target_link_libraries(CampusLostAndFound PRIVATE
     nlohmann_json::nlohmann_json
     Threads::Threads
 )
+
 target_link_libraries(LostFoundServer PRIVATE
     Qt6::Core
     Boost::system
     nlohmann_json::nlohmann_json
     Threads::Threads
 )
+
+# Unit tests
+option(BUILD_TESTS "Build the GoogleTest unit test suite" OFF)
+
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
